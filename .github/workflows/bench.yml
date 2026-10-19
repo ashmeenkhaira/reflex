@@ -1,0 +1,25 @@
+name: bench
+
+on: [push]
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup_build_env     # theirs: installs uv + Node, runs uv sync
+        with:
+          python-version: "3.12"
+          run-uv-sync: true
+      - run: uv pip install git+https://github.com/ashmeenkhaira/test-splitter   # ours
+      - name: Run unit tests
+        env:
+          PYTHONUNBUFFERED: 1                        # from their workflow
+        run: uv run pytest tests/units --durations=30 --cov --no-cov-on-fail --cov-report=
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: durations
+          path: .test-durations.json
+          include-hidden-files: true                 # the file name starts with "."
