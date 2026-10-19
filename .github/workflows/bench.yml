@@ -8,6 +8,11 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Reflex derives its version from git tags; a shallow checkout (the
+          # default) makes it 0.0.1.dev1, which reflex-hosting-cli rejects.
+          fetch-depth: 0
+          fetch-tags: true
       - uses: ./.github/actions/setup_build_env     # theirs: installs uv + Node, runs uv sync
         with:
           python-version: "3.12"
@@ -16,7 +21,10 @@ jobs:
       - name: Run unit tests
         env:
           PYTHONUNBUFFERED: 1                        # from their workflow
-        run: uv run pytest tests/units --durations=30 --cov --no-cov-on-fail --cov-report=
+        # test_workflow_gates.py checks .github/workflows against a ruleset; we
+        # deleted their workflows on this branch, so it can't pass here. Ignored
+        # identically in every bench job, so the comparison stays fair.
+        run: uv run pytest tests/units --ignore=tests/units/test_workflow_gates.py --durations=30 --cov --no-cov-on-fail --cov-report=
       - uses: actions/upload-artifact@v7
         if: always()
         with:
